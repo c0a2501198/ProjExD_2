@@ -13,6 +13,25 @@ DELTA = {
 }
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+
+def init_bb_imgs() -> tuple[list[pg.Surface], list[int]]:
+    """
+    大きさの違うばくだん画像と加速用リストを作る関数
+    引数：なし
+    戻り値：ばくだん画像リスト，加速リスト
+    """
+
+    bb_imgs = []
+    bb_accs = [a for a in range(1,11)]
+    for r in range(1,11):
+        bb_img = pg.Surface((20*r, 20*r))
+        pg.draw.circle(bb_img, (255, 0, 0), (10*r, 10*r), 10*r)
+        bb_img.set_colorkey((0, 0, 0))
+        bb_imgs.append(bb_img)
+        
+    return bb_imgs, bb_accs
+
+
 def gameover(screen: pg.Surface) -> None:
     """
     ゲームオーバー画面を5秒間表示する関数
@@ -70,13 +89,13 @@ def main():
     kk_img = pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 0.9)
     kk_rct = kk_img.get_rect()
     kk_rct.center = 300, 200
-    bb_img = pg.Surface((20,20)) #空のSurface
-    pg.draw.circle(bb_img, (255, 0, 0), (10,10), 10) # 赤い爆弾
-    bb_img.set_colorkey((0, 0, 0)) # 練習2：四隅の黒い部分を透過する
-    bb_rct = bb_img.get_rect()
-    bb_rct.centerx = random.randint(0, WIDTH)   # 横座標用の乱数
-    bb_rct.centery = random.randint(0, HEIGHT)  # 縦座標用の乱数
     vx, vy = +5, +5 # 練習2：爆弾の初期速度
+
+    bb_imgs, bb_accs = init_bb_imgs() # 大きさの違うばくだん画像リストと加速リストを作る
+    bb_img = bb_imgs[0]
+    bb_rct = bb_img.get_rect()
+    bb_rct.center = random.randint(100, WIDTH - 100), random.randint(100, HEIGHT - 100)
+    
     clock = pg.time.Clock()
     tmr = 0
     while True:
@@ -110,7 +129,18 @@ def main():
             kk_rct.move_ip(-sum_mv[0], -sum_mv[1]) # 先程の動きをキャンセルする
         screen.blit(kk_img, kk_rct)
 
-        bb_rct.move_ip(vx, vy) # 練習2：爆弾動く
+        # 時間に応じてばくだんを大きく速くする
+        bb_img = bb_imgs[min(tmr//500, 9)]
+
+        # 画像サイズが変わるのでRectサイズも更新する
+        bb_rct.width = bb_img.get_rect().width
+        bb_rct.height = bb_img.get_rect().height
+
+        avx = vx * bb_accs[min(tmr//500, 9)]
+        avy = vy * bb_accs[min(tmr//500, 9)]
+
+        # 爆弾を動かす
+        bb_rct.move_ip(avx, avy)
         yoko, tate = check_bound(bb_rct)
         if not yoko: # yoko == False
             vx*= -1
