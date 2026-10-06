@@ -14,6 +14,29 @@ DELTA = {
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
+def get_kk_imgs() -> dict[tuple[int, int], pg.Surface]:
+    """
+    移動方向ごとのこうかとん画像を作る関数
+    引数：なし
+    戻り値：移動量タプルをキー，こうかとん画像を値とする辞書
+    """
+
+    kk_img = pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 0.9)  # こうかとん画像を読み込み
+
+    kk_imgs = {
+        (0, 0): kk_img,
+        (+5, 0): pg.transform.flip(kk_img, True, False),  # 右
+        (-5, 0): kk_img,  # 左
+        (0, -5): pg.transform.rotozoom(kk_img, -90, 1.0),  # 上
+        (0, +5): pg.transform.rotozoom(kk_img, 90, 1.0),  # 下
+        (+5, -5): pg.transform.rotozoom(pg.transform.flip(kk_img, True, False), 45, 1.0),  # 右上
+        (+5, +5): pg.transform.rotozoom(pg.transform.flip(kk_img, True, False), -45, 1.0),  # 右下
+        (-5, -5): pg.transform.rotozoom(kk_img, -45, 1.0),  # 左上
+        (-5, +5): pg.transform.rotozoom(kk_img, 45, 1.0),  # 左下
+    }
+    return kk_imgs
+
+
 def init_bb_imgs() -> tuple[list[pg.Surface], list[int]]:
     """
     大きさの違うばくだん画像と加速用リストを作る関数
@@ -28,7 +51,7 @@ def init_bb_imgs() -> tuple[list[pg.Surface], list[int]]:
         pg.draw.circle(bb_img, (255, 0, 0), (10*r, 10*r), 10*r)
         bb_img.set_colorkey((0, 0, 0))
         bb_imgs.append(bb_img)
-        
+
     return bb_imgs, bb_accs
 
 
@@ -86,7 +109,8 @@ def main():
     pg.display.set_caption("逃げろ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
     bg_img = pg.image.load("fig/pg_bg.jpg")    
-    kk_img = pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 0.9)
+    kk_imgs = get_kk_imgs()
+    kk_img = kk_imgs[(0, 0)]
     kk_rct = kk_img.get_rect()
     kk_rct.center = 300, 200
     vx, vy = +5, +5 # 練習2：爆弾の初期速度
@@ -127,6 +151,8 @@ def main():
         kk_rct.move_ip(sum_mv)
         if check_bound(kk_rct) != (True, True): #どこからしらはみ出てる
             kk_rct.move_ip(-sum_mv[0], -sum_mv[1]) # 先程の動きをキャンセルする
+
+        kk_img = kk_imgs[tuple(sum_mv)]
         screen.blit(kk_img, kk_rct)
 
         # 時間に応じてばくだんを大きく速くする
